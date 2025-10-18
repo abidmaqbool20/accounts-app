@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'zoho' => [
+        'client_id' => env('ZOHO_CLIENT_ID'),
+        'client_secret' => env('ZOHO_CLIENT_SECRET'),
+        'redirect_uri' => env('ZOHO_REDIRECT_URI'),
+        'connect_redirect_uri' => env('ZOHO_CONNECT_REDIRECT_URI'),
+    ],
+
 ];
