@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useAccountsStore } from "@/store/useAccountsStore";
+import { useExpensesStore } from "@/store/useExpensesStore";
 import toast from "react-hot-toast";
 import {
     Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
@@ -11,39 +11,36 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { Download } from "lucide-react";
 
-export default function Accounts() {
+export default function ExpensesTable() {
     const {
-        chartOfAccounts,
+        expenses,
         pagination,
         loading,
-        fetchChartOfAccounts,
-        syncChartOfAccounts,
-    } = useAccountsStore();
+        fetchExpenses,
+        syncExpenses,
+    } = useExpensesStore();
 
     const [currentPage, setCurrentPage] = useState(1);
     const lastFetchedPage = useRef(null);
 
-    // ✅ Fetch accounts safely on mount + page change
+    // Fetch expenses on mount or page change
     useEffect(() => {
         if (lastFetchedPage.current !== currentPage) {
             lastFetchedPage.current = currentPage;
-            fetchChartOfAccounts(currentPage);
+            fetchExpenses(currentPage);
         }
-    }, [currentPage, fetchChartOfAccounts]);
+    }, [currentPage, fetchExpenses]);
 
-
-
+    // Sync button handler
     const handleSync = async () => {
-        toast.promise(
-            syncChartOfAccounts(),
-            {
-                loading: "Syncing accounts from Zoho...",
-                success: "Accounts synced successfully!",
-                error: (err) =>
-                    err?.message || "Zoho sync failed. Please check connection.",
-            }
-        );
+        toast.promise(syncExpenses(), {
+            loading: "Syncing expenses from Zoho...",
+            success: "Expenses synced successfully!",
+            error: (err) =>
+                err?.message || "Zoho sync failed. Please check connection.",
+        });
         lastFetchedPage.current = null;
         setCurrentPage(1);
     };
@@ -54,12 +51,21 @@ export default function Accounts() {
         if (page) setCurrentPage(Number(page));
     };
 
-    // ===== Loading skeleton =====
+    const handleDownloadReceipt = (receipt) => {
+        if (!receipt?.file_download_url) return toast.error("No file available.");
+        const link = document.createElement("a");
+        link.href = receipt.file_download_url;
+        link.download = receipt.file_name;
+        link.target = "_blank";
+        link.click();
+    };
+
+    // Loading skeleton
     if (loading) {
         return (
             <Card className="mt-6">
                 <CardHeader>
-                    <CardTitle>Chart of Accounts</CardTitle>
+                    <CardTitle>Expenses</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     {[...Array(5)].map((_, i) => (
@@ -70,14 +76,14 @@ export default function Accounts() {
         );
     }
 
-    // ===== Main UI =====
+    // ===== Main Table =====
     return (
         <Card className="mt-6 shadow-lg border border-gray-100 rounded-xl">
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <CardTitle className="text-xl font-bold text-primary">
-                            Chart of Accounts
+                            Expenses
                         </CardTitle>
                         <Button
                             onClick={handleSync}
@@ -85,11 +91,11 @@ export default function Accounts() {
                             className="text-sm font-medium"
                             disabled={loading}
                         >
-                            {loading ? "Syncing..." : "Sync Zoho Accounts"}
+                            {loading ? "Syncing..." : "Sync Zoho Expenses"}
                         </Button>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                        {pagination?.total || chartOfAccounts?.length || 0} total accounts
+                        {pagination?.total || expenses?.length || 0} total expenses
                     </p>
                 </div>
             </CardHeader>
@@ -99,22 +105,45 @@ export default function Accounts() {
                     <Table>
                         <TableHeader className="bg-gray-50">
                             <TableRow>
-                                <TableHead className="w-[35%]">Account Name</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Code</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead className="text-right">Created</TableHead>
+                                <TableHead className="w-[12%]">Expense ID</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Account</TableHead>
+                                <TableHead>Paid Through</TableHead>
+                                <TableHead className="w-[15%]">Total</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Receipt</TableHead>
                             </TableRow>
                         </TableHeader>
-                        <TableBody>
-                            {chartOfAccounts?.length > 0 ? (
-                                chartOfAccounts.map((acc) => (
+                        <TableBody class="text-left">
+                            {expenses?.length > 0 ? (
+                                expenses.map((exp) => (
                                     <TableRow
-                                        key={acc.account_id}
+                                        key={exp.id}
                                         className="hover:bg-gray-50 transition-colors"
                                     >
-                                        <TableCell className="text-left font-medium text-gray-900">
-                                            {acc.account_name || "—"}
+                                        <TableCell className="font-mono text-xs text-gray-800">
+                                            {exp.expense_id}
+                                        </TableCell>
+
+                                        <TableCell>
+                                            {exp.date
+                                                ? format(new Date(exp.date), "dd MMM yyyy")
+                                                : "—"}
+                                        </TableCell>
+
+                                        <TableCell className="text-sm font-medium text-gray-800">
+                                            {exp.account_name || "—"}
+                                        </TableCell>
+
+                                        <TableCell className="text-gray-600">
+                                            {exp.paid_through_account_name || "—"}
+                                        </TableCell>
+
+                                        <TableCell className="text-gray-900 font-semibold">
+                                            {exp.total
+                                                ? `${parseFloat(exp.total).toFixed(2)} ${exp.currency_code || ""
+                                                }`
+                                                : "—"}
                                         </TableCell>
 
                                         <TableCell>
@@ -122,30 +151,36 @@ export default function Accounts() {
                                                 variant="secondary"
                                                 className="capitalize bg-primary/10 text-primary border-none"
                                             >
-                                                {acc.account_type || "—"}
+                                                {exp.status || "—"}
                                             </Badge>
                                         </TableCell>
 
-                                        <TableCell>{acc.account_code || "—"}</TableCell>
-
-                                        <TableCell className="truncate max-w-[250px] text-muted-foreground">
-                                            {acc.description || "No description"}
-                                        </TableCell>
-
-                                        <TableCell className="text-right text-xs text-gray-500">
-                                            {acc.created_time
-                                                ? format(new Date(acc.created_time), "dd MMM yyyy, HH:mm")
-                                                : "—"}
+                                        <TableCell className="text-right">
+                                            {exp.receipts?.length > 0 ? (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() =>
+                                                        handleDownloadReceipt(exp.receipts[0])
+                                                    }
+                                                    className="flex items-center gap-1"
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                    Download
+                                                </Button>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">No file</span>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
                                     <TableCell
-                                        colSpan={5}
+                                        colSpan={7}
                                         className="text-center py-6 text-sm text-gray-500"
                                     >
-                                        No accounts found.
+                                        No expenses found.
                                     </TableCell>
                                 </TableRow>
                             )}

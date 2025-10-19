@@ -16,8 +16,8 @@ export const useAuthStore = create(
                 try {
                     set({ loading: true });
                     const res = await httpClient.get("/zoho/auth/url");
-                    if (res.data?.auth_url) {
-                        window.location.href = res.data.auth_url;
+                    if (res.data?.data?.auth_url) {
+                        window.location.href = res.data.data.auth_url;
                     } else {
                         alert("Unable to get authorization URL");
                     }

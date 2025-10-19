@@ -4,6 +4,8 @@ import { useAuthStore } from "@/store/useAuthStore";
 import LoginPage from "@/pages/auth/LoginPage";
 import Dashboard from "@/pages/account/Dashboard";
 import Accounts from "@/pages/account/Accounts";
+import Contacts from "@/pages/account/Contacts";
+import Expenses from "@/pages/account/Expenses";
 import Layout from "@/app/layout";
 import ZohoCallback from "@/pages/auth/ZohoCallback";
 
@@ -25,6 +27,8 @@ export default function AppRoutes() {
                         <Route path="/" element={<Dashboard />} />
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/accounts" element={<Accounts />} />
+                        <Route path="/contacts" element={<Contacts />} />
+                        <Route path="/expenses" element={<Expenses />} />
                         <Route path="*" element={<Navigate to="/" />} />
                     </Route>
                 )}

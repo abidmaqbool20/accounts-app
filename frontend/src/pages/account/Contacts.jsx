@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useAccountsStore } from "@/store/useAccountsStore";
+import { useContactsStore } from "@/store/useContactsStore";
 import toast from "react-hot-toast";
 import {
     Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
@@ -8,38 +8,37 @@ import {
     Card, CardHeader, CardTitle, CardContent,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
 
-export default function Accounts() {
-    const {
-        chartOfAccounts,
-        pagination,
-        loading,
-        fetchChartOfAccounts,
-        syncChartOfAccounts,
-    } = useAccountsStore();
+export default function ContactsTable() {
+    const { contacts, pagination, loading, fetchContacts, syncContacts } =
+        useContactsStore();
 
     const [currentPage, setCurrentPage] = useState(1);
     const lastFetchedPage = useRef(null);
 
-    // ✅ Fetch accounts safely on mount + page change
     useEffect(() => {
-        if (lastFetchedPage.current !== currentPage) {
-            lastFetchedPage.current = currentPage;
-            fetchChartOfAccounts(currentPage);
-        }
-    }, [currentPage, fetchChartOfAccounts]);
-
-
+        const loadContacts = async () => {
+            try {
+                if (lastFetchedPage.current !== currentPage) {
+                    lastFetchedPage.current = currentPage;
+                    await fetchContacts(currentPage);
+                }
+            } catch (error) {
+                toast.error(error?.message || "Failed to load contacts.");
+            }
+        };
+        loadContacts();
+    }, [currentPage, fetchContacts]);
 
     const handleSync = async () => {
         toast.promise(
-            syncChartOfAccounts(),
+            syncContacts(),
             {
-                loading: "Syncing accounts from Zoho...",
-                success: "Accounts synced successfully!",
+                loading: "Syncing contacts from Zoho...",
+                success: "Contacts synced successfully!",
                 error: (err) =>
                     err?.message || "Zoho sync failed. Please check connection.",
             }
@@ -54,12 +53,11 @@ export default function Accounts() {
         if (page) setCurrentPage(Number(page));
     };
 
-    // ===== Loading skeleton =====
     if (loading) {
         return (
             <Card className="mt-6">
                 <CardHeader>
-                    <CardTitle>Chart of Accounts</CardTitle>
+                    <CardTitle>Contacts</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     {[...Array(5)].map((_, i) => (
@@ -70,14 +68,13 @@ export default function Accounts() {
         );
     }
 
-    // ===== Main UI =====
     return (
-        <Card className="mt-6 shadow-lg border border-gray-100 rounded-xl">
+        <Card className="mt-6 shadow-md border border-gray-100 rounded-xl">
             <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <CardTitle className="text-xl font-bold text-primary">
-                            Chart of Accounts
+                            Contacts
                         </CardTitle>
                         <Button
                             onClick={handleSync}
@@ -85,11 +82,11 @@ export default function Accounts() {
                             className="text-sm font-medium"
                             disabled={loading}
                         >
-                            {loading ? "Syncing..." : "Sync Zoho Accounts"}
+                            {loading ? "Syncing..." : "Sync Zoho Contacts"}
                         </Button>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                        {pagination?.total || chartOfAccounts?.length || 0} total accounts
+                        {pagination?.total || contacts?.length || 0} total contacts
                     </p>
                 </div>
             </CardHeader>
@@ -99,43 +96,44 @@ export default function Accounts() {
                     <Table>
                         <TableHeader className="bg-gray-50">
                             <TableRow>
-                                <TableHead className="w-[35%]">Account Name</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Code</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead className="text-right">Created</TableHead>
+                                <TableHead className="w-[30%]">Name</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Phone</TableHead>
+                                <TableHead>Company</TableHead>
+                                <TableHead className="text-right">Type</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {chartOfAccounts?.length > 0 ? (
-                                chartOfAccounts.map((acc) => (
+                            {contacts?.length > 0 ? (
+                                contacts.map((c) => (
                                     <TableRow
-                                        key={acc.account_id}
+                                        key={c.id || c.contact_id}
                                         className="hover:bg-gray-50 transition-colors"
                                     >
-                                        <TableCell className="text-left font-medium text-gray-900">
-                                            {acc.account_name || "—"}
+                                        <TableCell className="flex items-center gap-2">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarFallback>
+                                                    {c.contact_name?.[0]?.toUpperCase() || "?"}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <span className="font-medium text-gray-900">
+                                                {c.contact_name || c.name || "—"}
+                                            </span>
                                         </TableCell>
-
                                         <TableCell>
+                                            {c.contact_persons?.[0]?.email || c.email || "—"}
+                                        </TableCell>
+                                        <TableCell>
+                                            {c.contact_persons?.[0]?.phone || c.phone || "—"}
+                                        </TableCell>
+                                        <TableCell>{c.company_name || c.company || "—"}</TableCell>
+                                        <TableCell className="text-right">
                                             <Badge
                                                 variant="secondary"
                                                 className="capitalize bg-primary/10 text-primary border-none"
                                             >
-                                                {acc.account_type || "—"}
+                                                {c.contact_type || c.type || "—"}
                                             </Badge>
-                                        </TableCell>
-
-                                        <TableCell>{acc.account_code || "—"}</TableCell>
-
-                                        <TableCell className="truncate max-w-[250px] text-muted-foreground">
-                                            {acc.description || "No description"}
-                                        </TableCell>
-
-                                        <TableCell className="text-right text-xs text-gray-500">
-                                            {acc.created_time
-                                                ? format(new Date(acc.created_time), "dd MMM yyyy, HH:mm")
-                                                : "—"}
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -145,7 +143,7 @@ export default function Accounts() {
                                         colSpan={5}
                                         className="text-center py-6 text-sm text-gray-500"
                                     >
-                                        No accounts found.
+                                        No contacts found.
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -153,7 +151,6 @@ export default function Accounts() {
                     </Table>
                 </div>
 
-                {/* ===== Pagination ===== */}
                 {pagination && (
                     <div className="flex items-center justify-center gap-3 mt-5">
                         <Button

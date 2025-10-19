@@ -49,22 +49,14 @@ export default function Layout() {
         {/* Main Content */}
         <main
           className={cn(
-            "flex-1 overflow-y-auto p-6 md:p-10",
+            "flex-1 overflow-y-auto p-2 md:p-2 overflow-auto min-h-[90vh] max-h-[90vh]",
             "bg-gradient-to-b from-white/70 to-white/40 backdrop-blur-md",
             "rounded-t-3xl lg:rounded-none"
           )}
         >
-          <div
-            className={cn(
-              "max-w-7xl mx-auto w-full h-full",
-              "bg-white shadow-xl rounded-2xl p-8",
-              "border border-gray-100 transition-all duration-300"
-            )}
-          >
-            {/* ✅ This is where child routes (Dashboard, Accounts, etc.) appear */}
-            <Outlet />
-          </div>
+          <Outlet />
         </main>
+
       </div>
     </div>
   );

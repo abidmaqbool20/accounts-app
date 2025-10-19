@@ -38,6 +38,8 @@ return [
     'zoho' => [
         'client_id' => env('ZOHO_CLIENT_ID'),
         'client_secret' => env('ZOHO_CLIENT_SECRET'),
+        'organization_id' => env('ZOHO_ORGANIZATION_ID'),
+        'connect_url' => env('ZOHO_CONNECT_URL'),
         'redirect_uri' => env('ZOHO_REDIRECT_URI'),
         'connect_redirect_uri' => env('ZOHO_CONNECT_REDIRECT_URI'),
     ],

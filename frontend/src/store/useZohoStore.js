@@ -1,28 +1,46 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import httpClient from "@/lib/axios";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export const useZohoStore = create(
     persist(
         (set, get) => ({
-            // ===== STATE =====
             zohoConnectToken: null,
-            chartOfAccounts: [],
-            contacts: [],
+            tokenIssuedAt: null,
             loading: false,
 
-            // ===== SETTERS =====
-            setZohoConnectToken: (token) => set({ zohoConnectToken: token }),
-            setChartOfAccounts: (data) => set({ chartOfAccounts: data }),
-            setContacts: (data) => set({ contacts: data }),
+            setZohoConnectToken: (token) =>
+                set({ zohoConnectToken: token, tokenIssuedAt: Date.now() }),
 
-            // ===== ACTIONS =====
+            setLoading: (loading) => set({ loading }),
+
+
+            checkTokenExpiry: () => {
+                const { zohoConnectToken, tokenIssuedAt } = get();
+                if (!zohoConnectToken || !tokenIssuedAt) return;
+
+                const now = Date.now();
+                const oneHour = 60 * 60 * 1000; // 1 hour in ms
+
+                if (now - tokenIssuedAt > oneHour) {
+                    console.log("⏰ Zoho token expired — clearing store");
+                    set({ zohoConnectToken: null, tokenIssuedAt: null });
+                }
+            },
+
             connectZoho: async () => {
                 try {
                     set({ loading: true });
-                    const res = await httpClient.get("/zoho/connect/url");
-                    if (res.data?.auth_url) {
-                        window.location.href = res.data.auth_url; // redirect to Zoho
+                    const { zohoToken } = useAuthStore.getState();
+                    if (!zohoToken) throw new Error("Missing Zoho token");
+
+                    const res = await httpClient.get("/zoho/connect/url", {
+                        headers: { Authorization: `Bearer ${zohoToken}` },
+                    });
+
+                    if (res.data?.data?.auth_url) {
+                        window.location.href = res.data.data.auth_url;
                     } else {
                         alert("Unable to get Zoho authorization URL.");
                     }
@@ -36,39 +54,21 @@ export const useZohoStore = create(
 
             handleZohoConnectCallback: async (token) => {
                 if (!token) return;
-                set({ zohoConnectToken: token });
-            },
-
-            fetchChartOfAccounts: async () => {
-                try {
-                    const { zohoConnectToken } = get();
-                    if (!zohoConnectToken) throw new Error("No Zoho token found");
-                    const res = await httpClient.get("/zoho/books/accounts", {
-                        headers: { Authorization: `Bearer ${zohoConnectToken}` },
-                    });
-                    set({ chartOfAccounts: res.data || [] });
-                } catch (error) {
-                    console.error("Error fetching chart of accounts:", error);
-                }
-            },
-
-            fetchContacts: async () => {
-                try {
-                    const { zohoConnectToken } = get();
-                    if (!zohoConnectToken) throw new Error("No Zoho token found");
-                    const res = await httpClient.get("/zoho/books/contacts", {
-                        headers: { Authorization: `Bearer ${zohoConnectToken}` },
-                    });
-                    set({ contacts: res.data || [] });
-                } catch (error) {
-                    console.error("Error fetching contacts:", error);
-                }
+                set({ zohoConnectToken: token, tokenIssuedAt: Date.now() });
             },
 
             disconnectZoho: () => {
-                set({ zohoConnectToken: null, chartOfAccounts: [], contacts: [] });
+                set({ zohoConnectToken: null, tokenIssuedAt: null });
             },
         }),
-        { name: "zoho-storage" } // persist store
+        {
+            name: "zoho-storage",
+
+            onRehydrateStorage: () => (state) => {
+                setTimeout(() => {
+                    state?.checkTokenExpiry?.();
+                }, 100);
+            },
+        }
     )
 );

@@ -1,9 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import {
-    Home,
     LayoutDashboard,
-    Settings,
+    Calculator,
+    Contact,
+    Blocks,
     LogOut,
-    User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,11 +14,13 @@ import { cn } from "@/lib/utils";
 
 export function Sidebar() {
     const { logout } = useAuthStore();
+    const navigate = useNavigate();
 
     const menuItems = [
-        { label: "Dashboard", icon: LayoutDashboard },
-        { label: "Profile", icon: User },
-        { label: "Settings", icon: Settings },
+        { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+        { label: "Accounts", icon: Calculator, path: "/accounts" },
+        { label: "Contacts", icon: Contact, path: "/contacts" },
+        { label: "Expenses", icon: Blocks, path: "/expenses" },
     ];
 
     return (
@@ -28,19 +31,18 @@ export function Sidebar() {
         >
             {/* Header */}
             <div className="px-4 py-4 border-b border-gray-200">
-                <h1 className="text-2xl font-bold text-primary tracking-tight">
-                    Tmam
-                </h1>
+                <h1 className="text-2xl font-bold text-primary tracking-tight">Tmam</h1>
             </div>
 
             {/* Navigation */}
-            <ScrollArea className="flex-1 border-amber-50 px-3 py-4">
+            <ScrollArea className="flex-1 px-3 py-4">
                 <nav className="space-y-2">
-                    {menuItems.map(({ label, icon: Icon }) => (
+                    {menuItems.map(({ label, icon: Icon, path }) => (
                         <Button
                             key={label}
                             variant="ghost"
                             className="w-full justify-start text-gray-700 hover:text-primary hover:bg-primary/10"
+                            onClick={() => navigate(path)}
                         >
                             <Icon className="h-4 w-4 mr-2" /> {label}
                         </Button>
@@ -48,7 +50,7 @@ export function Sidebar() {
                 </nav>
             </ScrollArea>
 
-            <Separator className="my-4 border-amber-50" />
+            <Separator className="my-4" />
 
             {/* Footer / Logout */}
             <div className="p-4">
