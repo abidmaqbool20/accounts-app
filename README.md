@@ -27,16 +27,8 @@ root/
 ```env
 ZOHO_CLIENT_ID=
 ZOHO_CLIENT_SECRET=
-ZOHO_ORGANIZATION_ID=
-DB_CONNECTION=mysql
-DB_HOST=mysql
-DB_PORT=3306
-DB_DATABASE=laravel_db
-DB_USERNAME=laravel_user
-DB_PASSWORD=laravel_user_password
-APP_URL=http://localhost:8080
-```
-Make sure to also update your database credentials and any other environment-specific settings.
+ZOHO_ORGANIZATION_ID= 
+``` 
 
 ---
 
